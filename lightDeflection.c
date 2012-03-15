@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Paul Chote
+ * Copyright 2009, 2012 Paul Chote
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,9 +26,9 @@
 #include <math.h>
 #include <string.h>
 #include <ncurses.h>
-#include "../cpgplot.h"
+#include <cpgplot.h>
 
-const char *versionString = "v1.01 :: 10/03/2009";
+const char *versionString = "v1.1 :: 16/03/2012";
 
 #define PI 3.14159265
 #define FALSE 0
