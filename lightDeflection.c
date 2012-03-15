@@ -61,7 +61,7 @@ double diffdu(double phi, double u, double du)
 
 // Shift position by an amount dphi using 4th-order Runge-Kutta algorithm
 void step()
-{		
+{
 	// Evaluate derivatives at the start point
 	double k1u = dphi * diffu(phi, u, du);
 	double k1du = dphi * diffdu(phi, u, du);
@@ -86,7 +86,7 @@ void step()
  * Fire a photon past a mass with an initial separatation of b
  */
 int raytrace(double b, float zoom, bool saveToFile)
-{	
+{
 	// Create an array to hold the calculated data points
 	// Start with 100,000 entries which should be sufficient for most cases.
 	// Array will expand itself if there is too many entries (will happen if the path comes
@@ -99,7 +99,7 @@ int raytrace(double b, float zoom, bool saveToFile)
 
 	// Start the photon at least 1000Rs away;
 	double startX = (zoom*1.2 > 1000) ? zoom*1.2 : 1000;
-	
+
 	// Find the angle required
 	phi = PI - atan2(b,startX);
 
@@ -108,34 +108,31 @@ int raytrace(double b, float zoom, bool saveToFile)
 	du  = cos(phi)/b;
 	dphi = -(0.05/180)*PI; // decrease phi by 0.01 degrees each step
 
-	
 	// Calculate path
+
 	while (true)
-	{	
+	{
 		// Path collapsing to center - stop calculating before the numbers blow up
 		if (zoom*u > 1000)
-		{
 			break;
-		}
-		
+
 		x[curEntry] = cos(phi)/u;
 		y[curEntry] = sin(phi)/u;
-		
+
 		// Path has (at least) reached viewport position, and has passed outside the viewport
 		// (check the previous point to ensure we have at least one point outside the viewport for the line to finish on)
 		if (phi < PI/2 && ((abs(x[curEntry-1]) > zoom*1.2 || abs(y[curEntry-1]) > zoom)))
-		{
 			break;
-		}
+
 		curEntry++;
-		
+
 		// Too many entries, need to expand the data array
 		if (curEntry == dataArraySize)
 		{
 			//printf("Expanding data array %d -> %d entries\n", dataArraySize, 10*dataArraySize);
 			bigX = malloc(10*dataArraySize*sizeof(float));
 			bigY = malloc(10*dataArraySize*sizeof(float));
-			
+
 			int i;
 			for (i = 0; i < dataArraySize; i++)
 			{
@@ -150,59 +147,56 @@ int raytrace(double b, float zoom, bool saveToFile)
 		}
 		step();
 	}
-	
+
 	//printf("%d data points \n",curEntry);
-	
+
 	/*
 	 * If we want to calculate the deflection, we will need to
 	 * keep calculating the path until it is straight, instead of
 	 * stopping as soon as it exits the viewport
 	 * /
-	 
+
 	// Calculate total deflection angle
 	double rise = y[curEntry-1] - y[curEntry-2];
 	double run = x[curEntry-1] - x[curEntry-2];
-	
+
 	//printf("rise:%f run:%f gradient:%f\n",rise,run,rise/run);
 
 	double endAngle = -atan2(rise,run);
 	while (endAngle < 0)
 		endAngle += PI;
-	
+
 	while (endAngle >= PI)
 		endAngle -= PI;
-	
+
 	printf("total deflection: %f degrees\n", endAngle*180/PI);
 	printf("theoretical deflection: %f degrees\n",360/(PI*b));
 	*/
-	
-	
+
 	// Draw path to screen or ps file
 	char filename[20];
 	char device[25];
-	
+
 	if (saveToFile)
 	{
 		sprintf(filename, "path-b%.3f.ps",b);
 		sprintf(device, "%s/PS",filename);
 	}
 	else
-	{
 		strcpy(device, "9/xs");
-	}
-	
+
 	if(cpgbeg(0, device, 1, 1) != 1)
 		return EXIT_FAILURE;
-	
+
 	// Setup page, draw axes
 	cpgpage();
 	cpgsvp(0.05, 0.95, 0.05, 0.95);
 	cpgwnad(-1.2*zoom, 1.2*zoom, -zoom, zoom);
 	cpgbox("bcnts", 0.0, 0, "bcntsv", 0.0, 0);
-	
+
 	cpgscf(2); // Set font style to roman
 	cpgslw(2); // Set line width 2
-	
+
 	// Plot title
 	char titleString[32];
 	sprintf(titleString, "Photon path for b=%.3f", b);
@@ -211,15 +205,15 @@ int raytrace(double b, float zoom, bool saveToFile)
 	// Plot event horizon
 	cpgsfs(2); // Set fill style to outline
 	cpgsls(2); // Set line style to dashed
-	cpgsci(2); // Set colour to 
+	cpgsci(2); // Set colour to
 	cpgcirc(0, 0, 1);
 	cpgsls(1); // Set line style to normal
 	cpgsci(7); // Set colour to yellow
-	
+
 	// Plot path
 	cpgline(curEntry,x,y);
 	cpgend();
-	
+
 	if (saveToFile)
 	{
 		clear();
@@ -227,7 +221,7 @@ int raytrace(double b, float zoom, bool saveToFile)
 		printw("\n(press any key to continue)\n");
 		getch();
 	}
-	
+
 	free(x);
 	free(y);
 	return EXIT_SUCCESS;
@@ -251,7 +245,7 @@ void printHelp()
 	attron(A_BOLD);
 	printw("COMMANDS");
 	attroff(A_BOLD);
-	
+
 	move(++row,cola);
 	attron(A_BOLD);
 	printw("?");
@@ -259,7 +253,7 @@ void printHelp()
 	move(row,colb);
 	printw("Display this list.");
 	++row;
-	
+
 	move(++row,cola);
 	attron(A_BOLD);
 	printw("FIRE <impact parameter>");
@@ -267,7 +261,7 @@ void printHelp()
 	move(++row,colb);
 	printw("Fire a photo with specified impact parameter.");
 	++row;
-	
+
 	move(++row,cola);
 	attron(A_BOLD);
 	printw("VIEWPORT <maximum radius>");
@@ -275,7 +269,7 @@ void printHelp()
 	move(++row,colb);
 	printw("Adjust the zoom of the viewport to this radius.");
 	++row;
-	
+
 	move(++row,cola);
 	attron(A_BOLD);
 	printw("PRINT");
@@ -283,21 +277,21 @@ void printHelp()
 	move(row,colb);
 	printw("Save current graph to file.");
 	++row;
-	
+
 	move(++row,cola);
 	attron(A_BOLD);
 	printw("QUIT");
 	attroff(A_BOLD);
 	move(row,colb);
 	printw("Exit the program.");
-	
+
 	move(row+2, 0);
 	printw("(press any key to continue)");
 
 	refresh();
-	
+
 	getch();
-	
+
 	clear();
 }
 
@@ -306,7 +300,7 @@ void printError(char *msg)
 	clear();
 	printw(msg);
 	printw("\n\n(press any key to continue)");
-	
+
 	getch();
 }
 
@@ -321,17 +315,17 @@ void printError(char *msg)
  */
 
 int main()
-{	
+{
 	initscr();				/* start the curses mode */
 	echo();					/* show user input */
-	
+
 	double b = 3.0f;
 	float zoom = 5.0f;
 
 	double inputb;
 	float inputzoom;
 	bool doRaytrace = false;
-	char inputBuffer[20];	
+	char inputBuffer[20];
 
 	while (true)
     {
@@ -342,26 +336,26 @@ int main()
 		}
 		clear();			/* clear the screen */
 		printw("Enter Command (type \"?\" for help):\n");
-		
+
 		getstr(inputBuffer); // Get the user's reply
-		
+
 		if (strcasecmp("QUIT", inputBuffer) == 0)
 		{
 			break;
 		}
-		
+
 		if (strcasecmp("?", inputBuffer) == 0)
 		{
 			printHelp();
 			continue;
 		}
-		
+
 		if (strcasecmp("PRINT", inputBuffer) == 0)
 		{
 			raytrace(b, zoom, true);
 			continue;
 		}
-		
+
 		if (strncasecmp("FIRE ", inputBuffer,5) == 0)
 		{
 			inputb = -1;
@@ -378,7 +372,7 @@ int main()
 			}
 			continue;
 		}
-		
+
 		if (strncasecmp("VIEWPORT ", inputBuffer,9) == 0)
 		{
 			inputzoom = -1;
