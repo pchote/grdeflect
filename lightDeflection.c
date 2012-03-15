@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdbool.h>
 #include <string.h>
 #include <ncurses.h>
 #include <cpgplot.h>
@@ -31,8 +32,7 @@
 const char *versionString = "v1.1 :: 16/03/2012";
 
 #define PI 3.14159265
-#define FALSE 0
-#define TRUE 1
+
 
 double b;
 double u;
@@ -85,7 +85,7 @@ void step()
 /*
  * Fire a photon past a mass with an initial separatation of b
  */
-int raytrace(double b, float zoom, char saveToFile)
+int raytrace(double b, float zoom, bool saveToFile)
 {	
 	// Create an array to hold the calculated data points
 	// Start with 100,000 entries which should be sufficient for most cases.
@@ -104,14 +104,13 @@ int raytrace(double b, float zoom, char saveToFile)
 	phi = PI - atan2(b,startX);
 
 	// Initial conditions
-	//phi = (179.95/180)*PI; // Start at 179.9 degrees, gives r ~ 1150 for b = 1
 	u   = sin(phi)/b;
 	du  = cos(phi)/b;
 	dphi = -(0.05/180)*PI; // decrease phi by 0.01 degrees each step
 
 	
 	// Calculate path
-	while (TRUE)
+	while (true)
 	{	
 		// Path collapsing to center - stop calculating before the numbers blow up
 		if (zoom*u > 1000)
@@ -331,14 +330,14 @@ int main()
 
 	double inputb;
 	float inputzoom;
-	char doRaytrace = FALSE;
+	bool doRaytrace = false;
 	char inputBuffer[20];	
 
-	while (TRUE) {
-
+	while (true)
+    {
 		if (doRaytrace)
 		{
-			raytrace(b, zoom, FALSE);
+			raytrace(b, zoom, false);
 			doRaytrace = 0;
 		}
 		clear();			/* clear the screen */
@@ -359,7 +358,7 @@ int main()
 		
 		if (strcasecmp("PRINT", inputBuffer) == 0)
 		{
-			raytrace(b, zoom, TRUE);
+			raytrace(b, zoom, true);
 			continue;
 		}
 		
