@@ -288,10 +288,40 @@ void printHelp()
     printw("\nby Paul Chote for Victoria University of Wellington\n");
     int row = 3;
     int cola = 3;
-    int colb = 10;
-    move(row,cola);
+    int colb = 30;
+
+    move(row,0);
     attron(A_BOLD);
-    printw("COMMANDS");
+    printw("OVERVIEW:");
+    attroff(A_BOLD);
+    move(++row,cola);
+    printw("Simulates the path of a photon travelling past a gravitational body.");
+    move(++row,cola);
+    printw("A photon is fired horizontally from the left of the screen, with an");
+    move(++row,cola);
+    printw("impact parameter specified by the FIRE command (given as a ");
+    move(++row,cola);
+    printw("multiple of the Schwarzschild radius, Rs).");
+
+    row += 2;
+    move(row,cola);
+    printw("The path of the photon will be bent, or it will be captured if it");
+    move(++row,cola);
+    printw("passes within 1Rs of the center of mass.");
+
+    row += 2;
+    move(row,cola);
+    printw("Most objects have a physical size much larger than their Schwarzschild");
+    move(++row,cola);
+    printw("radius, which prevents photons from passing this close. The exception");
+    move(++row,cola);
+    printw("are Black Holes, where 1Rs defines their event horizon.");
+
+    row += 2;
+
+    move(row,0);
+    attron(A_BOLD);
+    printw("COMMANDS:");
     attroff(A_BOLD);
 
     move(++row,cola);
@@ -299,24 +329,21 @@ void printHelp()
     printw("?");
     attroff(A_BOLD);
     move(row,colb);
-    printw("Display this list.");
-    ++row;
+    printw("Display this description.");
 
     move(++row,cola);
     attron(A_BOLD);
     printw("FIRE <impact parameter>");
     attroff(A_BOLD);
-    move(++row,colb);
+    move(row,colb);
     printw("Fire a photo with specified impact parameter.");
-    ++row;
 
     move(++row,cola);
     attron(A_BOLD);
     printw("VIEWPORT <maximum radius>");
     attroff(A_BOLD);
-    move(++row,colb);
-    printw("Adjust the zoom of the viewport to this radius.");
-    ++row;
+    move(row,colb);
+    printw("Adjust the zoom of the viewport.");
 
     move(++row,cola);
     attron(A_BOLD);
@@ -324,7 +351,6 @@ void printHelp()
     attroff(A_BOLD);
     move(row,colb);
     printw("Save current graph to file.");
-    ++row;
 
     move(++row,cola);
     attron(A_BOLD);
