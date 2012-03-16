@@ -221,7 +221,7 @@ int raytrace(double yi, float zoom, bool saveToFile)
 
     // Plot title
     char *titleString;
-    asprintf(&titleString, "Path for photon with impact parameter %.3f", yi);
+    asprintf(&titleString, "Path for a photon with impact parameter %.3f", yi);
     cpgmtxt("t", 1.0, 0.5, 0.5, titleString);
     free(titleString);
 
@@ -243,13 +243,17 @@ int raytrace(double yi, float zoom, bool saveToFile)
     cpgsci(1); // White
     char *deflabel, *blabel;
     if (failed)
-        asprintf(&deflabel, "Total deflection: N/A");
+        asprintf(&deflabel, "Total deflection: Captured!");
     else if (deflectAngle > 0.1)
         asprintf(&deflabel, "Total deflection: \\gD\\gh = %3.3f deg", deflectAngle);
     else
         asprintf(&deflabel, "Total deflection: \\gD\\gh = %1.3e deg", deflectAngle);
 
-    asprintf(&blabel, "Closest approach: b = %0.3f", b);
+    if (failed)
+        asprintf(&blabel, "Closest approach: Captured!");
+    else
+        asprintf(&blabel, "Closest approach: b = %0.3f", b);
+
     cpgmtxt("b", 3, 0, 0, blabel);
     cpgmtxt("b", 3, 1, 1, deflabel);
 
