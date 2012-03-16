@@ -55,7 +55,7 @@ double diffdu(double phi, double u, double du)
 {
 	// d^2u/dphi^2 + u = 3/2*Rg*u^2
 	// if u is dimensionless (u = u*Rg), the Rg drops out
-	return (3/2)*u*u-u;
+	return (3.0/2)*u*u-u;
 }
 
 
