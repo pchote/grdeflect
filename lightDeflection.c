@@ -32,9 +32,8 @@
 const char *versionString = "v1.1 :: 16/03/2012";
 
 #define PI 3.14159265
+const double aspect = 1.3;
 
-
-double b;
 double u;
 double du;
 double phi;
@@ -83,45 +82,71 @@ void step()
 }
 
 /*
- * Fire a photon past a mass with an initial separatation of b
+ * Fire a photon past a mass with an initial separatation of yi on the y axis
  */
-int raytrace(double b, float zoom, bool saveToFile)
+int raytrace(double yi, float zoom, bool saveToFile)
 {
 	// Create an array to hold the calculated data points
 	// Start with 100,000 entries which should be sufficient for most cases.
 	// Array will expand itself if there is too many entries (will happen if the path comes
 	// close to the event horizon and orbits the mass a few times)
 	int dataArraySize = 100000;
-	float *x = malloc(dataArraySize*sizeof(float));
-	float *y = malloc(dataArraySize*sizeof(float));
-	float *bigX, *bigY;
+	double *x = malloc(dataArraySize*sizeof(double));
+	double *y = malloc(dataArraySize*sizeof(double));
+	double *bigX, *bigY;
 	int curEntry = 0;
 
 	// Start the photon at least 1000Rs away;
-	double startX = (zoom*1.2 > 1000) ? zoom*1.2 : 1000;
+	double startX = (zoom*aspect > 1000) ? zoom*aspect : 1000;
+    phi = PI - atan2(yi, startX);
 
-	// Find the angle required
-	phi = PI - atan2(b,startX);
+    // Initial conditions
+	u   = sin(phi)/yi;
+	du  = cos(phi)/yi;
+	dphi = -(0.001/180)*PI; // decrease phi by 0.001 degrees each step
 
-	// Initial conditions
-	u   = sin(phi)/b;
-	du  = cos(phi)/b;
-	dphi = -(0.05/180)*PI; // decrease phi by 0.01 degrees each step
+    // Record the closest separation and angle
+    double bsq = yi*yi;
+    double bphi = PI/2;
 
 	// Calculate path
-
+    bool failed = false;
+    bool hires = false;
 	while (true)
 	{
 		// Path collapsing to center - stop calculating before the numbers blow up
 		if (zoom*u > 1000)
+        {
+            failed = true;
 			break;
-
+        }
 		x[curEntry] = cos(phi)/u;
 		y[curEntry] = sin(phi)/u;
 
+        // Squared distance to the center of mass
+        double dsq = x[curEntry]*x[curEntry] + y[curEntry]*y[curEntry];
+        if (dsq < bsq)
+        {
+            bsq = dsq;
+            bphi = phi;
+        }
+
+        // Increase accuracy when d < 2 b
+        if (!hires && dsq < 4*yi*yi)
+        {
+            dphi /= 25;
+            hires = true;
+        }
+        else if (hires && dsq > 4*yi*yi)
+        {
+            dphi *= 25;
+            hires = false;
+        }
+
 		// Path has (at least) reached viewport position, and has passed outside the viewport
-		// (check the previous point to ensure we have at least one point outside the viewport for the line to finish on)
-		if (phi < PI/2 && ((abs(x[curEntry-1]) > zoom*1.2 || abs(y[curEntry-1]) > zoom)))
+        // Calculate points to at least 10rs to ensure the path is straight so provide an accurate estimate of deflection angle
+		// Also ensure we have at least one point outside the viewport for the line to finish on
+		if (phi < PI/2 && (dsq > 100) && ((abs(x[curEntry-1]) > zoom*aspect || abs(y[curEntry-1]) > zoom)))
 			break;
 
 		curEntry++;
@@ -130,8 +155,8 @@ int raytrace(double b, float zoom, bool saveToFile)
 		if (curEntry == dataArraySize)
 		{
 			//printf("Expanding data array %d -> %d entries\n", dataArraySize, 10*dataArraySize);
-			bigX = malloc(10*dataArraySize*sizeof(float));
-			bigY = malloc(10*dataArraySize*sizeof(float));
+			bigX = malloc(10*dataArraySize*sizeof(double));
+			bigY = malloc(10*dataArraySize*sizeof(double));
 
 			int i;
 			for (i = 0; i < dataArraySize; i++)
@@ -145,41 +170,38 @@ int raytrace(double b, float zoom, bool saveToFile)
 			x = bigX;
 			y = bigY;
 		}
+
 		step();
 	}
 
-	//printf("%d data points \n",curEntry);
+    // Closest separation between photon and center of mass
+    double b = sqrt(bsq);
+    double deflectAngle = 0;
+    if (!failed)
+    {
+        // Estimate the path as a kinked line, with the kink
+        // at the intersection of the line along bphi with yi
+        double xi = yi*tan(PI/2 - bphi);
 
-	/*
-	 * If we want to calculate the deflection, we will need to
-	 * keep calculating the path until it is straight, instead of
-	 * stopping as soon as it exits the viewport
-	 * /
+        // For b > 3 estimate deflection from kinked line,
+        // otherwise estimate from tangent at closest passing
+        deflectAngle = (b > 3) ? -atan2(y[curEntry-1] - yi, x[curEntry-1] - xi) : 2*(PI/2-bphi);
+        // Convert to degrees
+        deflectAngle *= 180/PI;
 
-	// Calculate total deflection angle
-	double rise = y[curEntry-1] - y[curEntry-2];
-	double run = x[curEntry-1] - x[curEntry-2];
+        //printf("deflection: %f deg\n", deflectAngle);
+        //double bkink = sqrt(xi*xi+yi*yi);
+        //printf("theoretical: %f theoretical kink: %f\n", 2/b*180/PI, 2/bkink*180/PI);
+        //printf("\ndifference: %4.2f%%\n", (deflectAngle - 2/b*180/PI)/deflectAngle*100);
+    }
 
-	//printf("rise:%f run:%f gradient:%f\n",rise,run,rise/run);
-
-	double endAngle = -atan2(rise,run);
-	while (endAngle < 0)
-		endAngle += PI;
-
-	while (endAngle >= PI)
-		endAngle -= PI;
-
-	printf("total deflection: %f degrees\n", endAngle*180/PI);
-	printf("theoretical deflection: %f degrees\n",360/(PI*b));
-	*/
-
-	// Draw path to screen or ps file
+    // Draw path to screen or ps file
 	char filename[20];
 	char device[25];
 
 	if (saveToFile)
 	{
-		sprintf(filename, "path-b%.3f.ps",b);
+		sprintf(filename, "path-%.3f.ps",yi);
 		sprintf(device, "%s/PS",filename);
 	}
 	else
@@ -190,28 +212,54 @@ int raytrace(double b, float zoom, bool saveToFile)
 
 	// Setup page, draw axes
 	cpgpage();
-	cpgsvp(0.05, 0.95, 0.05, 0.95);
-	cpgwnad(-1.2*zoom, 1.2*zoom, -zoom, zoom);
+	cpgsvp(0.05, 0.95, 0.1, 0.95);
+	cpgwnad(-aspect*zoom, aspect*zoom, -zoom, zoom);
 	cpgbox("bcnts", 0.0, 0, "bcntsv", 0.0, 0);
 
 	cpgscf(2); // Set font style to roman
 	cpgslw(2); // Set line width 2
 
 	// Plot title
-	char titleString[32];
-	sprintf(titleString, "Photon path for b=%.3f", b);
+	char *titleString;
+	asprintf(&titleString, "Path for photon with impact parameter %.3f", yi);
 	cpgmtxt("t", 1.0, 0.5, 0.5, titleString);
+    free(titleString);
 
 	// Plot event horizon
 	cpgsfs(2); // Set fill style to outline
 	cpgsls(2); // Set line style to dashed
-	cpgsci(2); // Set colour to
+	cpgsci(2); // Set colour to red
 	cpgcirc(0, 0, 1);
-	cpgsls(1); // Set line style to normal
-	cpgsci(7); // Set colour to yellow
 
-	// Plot path
-	cpgline(curEntry,x,y);
+    // Create a float array for pgplot
+    float *xf = malloc(curEntry*sizeof(float));
+	float *yf = malloc(curEntry*sizeof(float));
+    for (int i = 0; i < curEntry; i++)
+    {
+        xf[i] = x[i];
+        yf[i] = y[i];
+    }
+
+    cpgsci(1); // White
+    char *deflabel, *blabel;
+    if (failed)
+        asprintf(&deflabel, "Total deflection: N/A");
+    else if (deflectAngle > 0.1)
+        asprintf(&deflabel, "Total deflection: \\gD\\gh = %3.3f deg", deflectAngle);
+    else
+        asprintf(&deflabel, "Total deflection: \\gD\\gh = %1.3e deg", deflectAngle);
+
+    asprintf(&blabel, "Closest approach: b = %0.3f", b);
+    cpgmtxt("b", 3, 0, 0, blabel);
+    cpgmtxt("b", 3, 1, 1, deflabel);
+
+    free(blabel);
+    free(deflabel);
+
+    // Plot path
+    cpgsls(1); // Set line style to normal
+    cpgsci(7); // Set colour to yellow
+    cpgline(curEntry,xf,yf);
 	cpgend();
 
 	if (saveToFile)
@@ -314,7 +362,7 @@ void printError(char *msg)
  *
  */
 
-int main()
+int main(int argc, char *argv[])
 {
 	initscr();				/* start the curses mode */
 	echo();					/* show user input */

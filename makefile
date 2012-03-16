@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall --std=c99
 CC = gcc
 FF = gfortran
 OSX_LIBS = -I/sw/lib/pgplot -L/sw/lib/pgplot -L/usr/X11R6/lib -lX11 -L/sw/lib -laquaterm -Wl,-framework -Wl,Foundation  -lpng
